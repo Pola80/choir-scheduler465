@@ -1,0 +1,36 @@
+steps:
+  # Install backend dependencies (in the backend directory)
+  - name: 'gcr.io/cloud-builders/npm'
+    dir: 'backend'
+    args: ['ci', '--only=production']
+
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA', './backend']
+
+  # Push image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'choir-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+substitutions:
+  _REGION: 'us-central1'
+
+images:
+  - 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA'
+
+timeout: '1200s'

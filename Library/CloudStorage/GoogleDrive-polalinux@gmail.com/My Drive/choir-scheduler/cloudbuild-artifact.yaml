@@ -1,0 +1,41 @@
+steps:
+  # Install backend dependencies (in the backend directory)
+  - name: 'gcr.io/cloud-builders/npm'
+    dir: 'backend'
+    args: ['ci', '--only=production']
+
+  # Build the container image and tag it for Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '$_REPO_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/choir-backend:$SHORT_SHA'
+      - './backend'
+
+  # Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '$_REPO_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/choir-backend:$SHORT_SHA'
+
+  # Deploy to Cloud Run using the pushed Artifact Registry image
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy choir-backend \
+          --image=$_REPO_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/choir-backend:$SHORT_SHA \
+          --region ${_REGION} \
+          --platform managed \
+          --allow-unauthenticated
+
+substitutions:
+  _REGION: 'us-central1'
+  _REPO_LOCATION: 'us-central1'
+  _REPOSITORY: 'choir-repo'
+
+images:
+  - '$_REPO_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPOSITORY/choir-backend:$SHORT_SHA'
+
+timeout: '1200s'
