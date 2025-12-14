@@ -12,15 +12,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List repository structure
-        run: |
-          echo "Repository root contents:"
-          ls -la
-          echo ""
-          echo "Looking for choir-scheduler directory:"
-          find . -name "choir-scheduler" -type d 2>/dev/null | head -5
-          find . -name "server.js" -type f 2>/dev/null | head -5
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
@@ -33,15 +24,10 @@ jobs:
         run: |
           gcloud auth configure-docker gcr.io
 
-      - name: Build Docker image
+      - name: Build and push Docker image
         run: |
-          # Find the backend directory
-          BACKEND_DIR=$(find . -path "*choir-scheduler/backend" -type d | head -1)
-          echo "Found backend at: $BACKEND_DIR"
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend:latest $BACKEND_DIR
-
-      - name: Push Docker image to GCR
-        run: |
+          cd Library/CloudStorage/GoogleDrive-polalinux@gmail.com/My\ Drive/choir-scheduler/backend
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend:latest .
           docker push gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend:latest
 
       - name: Deploy to Cloud Run
