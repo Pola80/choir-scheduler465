@@ -9,7 +9,7 @@ jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
@@ -20,27 +20,32 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Configure Docker for GCR
+      - name: Configure Docker authentication
         run: |
-          gcloud auth configure-docker
+          gcloud auth configure-docker gcr.io
 
-      - name: Build and push Docker image
+      - name: Build Docker image
+        working-directory: Library/CloudStorage/GoogleDrive-polalinux@gmail.com/My\ Drive/choir-scheduler/backend
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend Library/CloudStorage/GoogleDrive-polalinux@gmail.com/My\ Drive/choir-scheduler/backend
-          docker push gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend:latest .
+
+      - name: Push Docker image to GCR
+        run: |
+          docker push gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend:latest
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy choir-backend \
-            --image gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend \
-            --region us-central1 \
-            --platform managed \
+            --image=gcr.io/${{ secrets.GCP_PROJECT }}/choir-backend:latest \
+            --region=us-central1 \
+            --platform=managed \
             --allow-unauthenticated \
-            --project ${{ secrets.GCP_PROJECT }}
+            --project=${{ secrets.GCP_PROJECT }}
 
-      - name: Get service URL
+      - name: Display service URL
         run: |
+          echo "Service deployed at:"
           gcloud run services describe choir-backend \
-            --region us-central1 \
-            --format 'value(status.url)' \
-            --project ${{ secrets.GCP_PROJECT }}
+            --region=us-central1 \
+            --format='value(status.url)' \
+            --project=${{ secrets.GCP_PROJECT }}
