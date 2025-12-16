@@ -7,13 +7,26 @@ app.use(cors());
 app.use(express.json());
 
 // PostgreSQL connection pool
-const pool = new Pool({
+const dbConfig = {
   user: process.env.DB_USER || 'choiradmin',
   password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST || '/cloudsql/choir-scheduler-deploy:us-central1:choir-db',
-  port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'choir_scheduler',
-});
+};
+
+// Use Cloud SQL Proxy socket when available
+if (process.env.DB_HOST && process.env.DB_HOST.includes('/')) {
+  // Unix socket path
+  dbConfig.host = process.env.DB_HOST;
+} else if (process.env.INSTANCE_CONNECTION_NAME) {
+  // Cloud SQL Proxy connection name
+  dbConfig.host = `/cloudsql/${process.env.INSTANCE_CONNECTION_NAME}`;
+} else {
+  // Regular host/port connection
+  dbConfig.host = process.env.DB_HOST || '34.71.173.28';
+  dbConfig.port = process.env.DB_PORT || 5432;
+}
+
+const pool = new Pool(dbConfig);
 
 pool.on('error', (err) => console.error('Pool error:', err));
 
