@@ -1,18 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { API_URL } from '../config';
 
 const KEY = 'CHOIR_REHEARSALS_v1';
 
-// Set your Cloud Run / production URL here. Leave as the placeholder to use
-// a sensible default for local development (Android emulator or localhost).
-let CLOUD_RUN_URL = 'https://YOUR_CLOUD_RUN_URL.a.run.app';
-
-// Default API_BASE resolution logic:
-// - If CLOUD_RUN_URL has been replaced with a real URL, use it (production)
-// - Otherwise, use emulator/localhost for local development
-let API_BASE = CLOUD_RUN_URL !== 'https://YOUR_CLOUD_RUN_URL.a.run.app'
-  ? CLOUD_RUN_URL
-  : (Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000');
+// Use production backend URL from config
+let API_BASE = API_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://localhost:3001');
 
 // Allow runtime override (useful in debugging or CI)
 export function setApiBase(url) {
