@@ -7,6 +7,8 @@ app.use(express.json());
 
 let rehearsals = [];
 
+app.get('/', (req, res) => res.json({ message: 'Choir Scheduler API', version: '1.0.0' }));
+
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.get('/rehearsals', (req, res) => {
