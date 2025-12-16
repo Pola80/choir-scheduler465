@@ -12,7 +12,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/choir-backend:latest']
 
-  # Deploy to Cloud Run
+  # Deploy to Cloud Run with Cloud SQL Proxy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
@@ -26,6 +26,10 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--add-cloudsql-instances'
+      - 'choir-scheduler-deploy:us-central1:choir-db'
+      - '--set-cloudsql-instances'
+      - 'choir-scheduler-deploy:us-central1:choir-db'
 
 substitutions:
   _REGION: 'us-central1'
