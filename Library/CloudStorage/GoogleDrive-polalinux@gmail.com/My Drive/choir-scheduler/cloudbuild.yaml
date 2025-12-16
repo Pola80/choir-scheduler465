@@ -26,8 +26,6 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      - '--add-cloudsql-instances'
-      - 'choir-scheduler-deploy:us-central1:choir-db'
       - '--set-cloudsql-instances'
       - 'choir-scheduler-deploy:us-central1:choir-db'
 
