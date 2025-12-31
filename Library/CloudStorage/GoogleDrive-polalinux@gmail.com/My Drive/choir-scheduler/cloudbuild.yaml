@@ -31,6 +31,7 @@ steps:
 
 substitutions:
   _REGION: 'us-central1'
+  _PROJECT_ID: '925038690128'
 
 images:
   - 'gcr.io/925038690128/choir-backend:latest'
