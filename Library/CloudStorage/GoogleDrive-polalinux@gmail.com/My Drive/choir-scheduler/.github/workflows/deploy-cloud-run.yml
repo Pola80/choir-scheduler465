@@ -27,21 +27,21 @@ jobs:
       - name: Build and push Docker image
         run: |
           cd Library/CloudStorage/GoogleDrive-polalinux@gmail.com/My\ Drive/choir-scheduler/backend
-          docker build -t us-central1-docker.pkg.dev/925038690128/choir-backend/choir-backend:latest .
-          docker push us-central1-docker.pkg.dev/925038690128/choir-backend/choir-backend:latest
+          docker build -t us-central1-docker.pkg.dev/choir-scheduler-deploy/choir-backend/choir-backend:latest .
+          docker push us-central1-docker.pkg.dev/choir-scheduler-deploy/choir-backend/choir-backend:latest
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy choir-backend \
-            --image=us-central1-docker.pkg.dev/925038690128/choir-backend/choir-backend:latest \
+            --image=us-central1-docker.pkg.dev/choir-scheduler-deploy/choir-backend/choir-backend:latest \
             --region=us-central1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=925038690128
+            --project=choir-scheduler-deploy
 
       - name: Display service URL
         run: |
           gcloud run services describe choir-backend \
             --region=us-central1 \
             --format='value(status.url)' \
-            --project=925038690128
+            --project=choir-scheduler-deploy
