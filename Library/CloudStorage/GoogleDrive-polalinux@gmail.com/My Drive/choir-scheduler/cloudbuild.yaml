@@ -6,13 +6,13 @@ steps:
 
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA', './backend']
+    args: ['build', '-t', 'gcr.io/925038690128/choir-backend:latest', './backend']
 
   # Push image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA']
+    args: ['push', 'gcr.io/925038690128/choir-backend:latest']
 
-  # Deploy to Cloud Run
+  # Deploy to Cloud Run with Cloud SQL Proxy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
@@ -20,17 +20,20 @@ steps:
       - 'deploy'
       - 'choir-backend'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA'
+      - 'gcr.io/925038690128/choir-backend:latest'
       - '--region'
       - '${_REGION}'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-cloudsql-instances'
+      - 'choir-scheduler-deploy:us-central1:choir-db'
 
 substitutions:
   _REGION: 'us-central1'
+  _PROJECT_ID: '925038690128'
 
 images:
-  - 'gcr.io/$PROJECT_ID/choir-backend:$SHORT_SHA'
+  - 'gcr.io/925038690128/choir-backend:latest'
 
 timeout: '1200s'

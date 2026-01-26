@@ -1,0 +1,16 @@
+project_id              = "choir-scheduler-deploy"
+region                  = "us-central1"
+cluster_name            = "gke-choir-scheduler"
+zones                   = ["us-central1-a", "us-central1-b", "us-central1-f"]
+network_name            = "vpc-01"
+subnetwork_name         = "us-central1-01"
+ip_range_pods           = "us-central1-01-gke-01-pods"
+ip_range_services       = "us-central1-01-gke-01-services"
+machine_type            = "e2-medium"
+node_locations          = ["us-central1-b", "us-central1-c"]
+min_node_count          = 1
+max_node_count          = 100
+initial_node_count      = 3
+service_account_email   = ""
+gpu_count               = 1
+gpu_type                = "nvidia-l4"

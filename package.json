@@ -1,0 +1,26 @@
+{
+  "name": "choir-scheduler",
+  "version": "0.1.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.19.3",
+    "@react-navigation/native": "^6.1.7",
+    "@react-navigation/native-stack": "^6.9.12",
+    "date-fns": "^2.30.0",
+    "expo": "^54.0.13",
+    "expo-splash-screen": "^31.0.12",
+    "react": "18.2.0",
+    "react-native": "^0.76.9"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.5",
+    "eas-cli": "^16.23.1"
+  }
+}
