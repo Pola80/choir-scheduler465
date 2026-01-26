@@ -1,0 +1,66 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/tfplan
+terraform/terraform.tfstate*
+terraform/.tfvars
+**/*.tfstate
+**/*.tfstate.*
+
+# Node/npm
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/settings.json
+.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+logs/
+*.log
+
+# Build outputs
+dist/
+build/
+out/
+
+# Dependencies
+.gradle/
+build/
+.m2/
+
+# Docker
+.dockerignore
+
+# Kubernetes
+kubeconfig
+kubeconfig-*
+
+# GCP
+.gcloud/
+.google-cloud-sdk/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
