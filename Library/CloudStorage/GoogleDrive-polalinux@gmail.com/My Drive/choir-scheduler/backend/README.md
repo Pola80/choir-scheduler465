@@ -62,3 +62,5 @@ The server listens on port 3000 by default.
 Notes for mobile emulators:
 - Android emulator (default) can reach the host machine at `10.0.2.2` — this project uses that as `API_BASE`.
 - For a physical device, use your machine's LAN IP and ensure both device and host are on the same network.
+- This is a README file for the deployment of the choir application
+
