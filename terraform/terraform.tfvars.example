@@ -1,0 +1,31 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# NEVER commit terraform.tfvars to source control.
+
+# GCP Project Configuration
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# Application Configuration
+app_name = "choir-scheduler"
+app_port = 3000
+
+# Deployment Configuration
+environment = "production"
+
+# Container Resources
+container_cpu    = "1"
+container_memory = "1Gi"
+
+# Auto-scaling
+min_instances = 0
+max_instances = 10
+
+# Storage
+create_backup_bucket  = true
+force_destroy_buckets = false
+
+# Cloud SQL (PostgreSQL)
+db_tier     = "db-f1-micro"               # cheapest tier — upgrade for production load
+db_name     = "choir"
+db_user     = "choir_app"
+db_password = "CHANGE_ME_BEFORE_APPLYING" # use a strong random password

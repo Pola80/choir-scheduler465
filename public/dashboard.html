@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Choir Scheduler</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+    <nav>
+        <h1>Choir Scheduler</h1>
+        <div class="nav-right">
+            <div class="user-badge">&#128100; <span id="user-name">User</span></div>
+            <button class="logout-btn" id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- HOME VIEW -->
+        <div id="home-view" class="section active">
+            <div class="welcome-card">
+                <h2 id="welcome-text">Welcome Back!</h2>
+                <p id="user-email"></p>
+            </div>
+
+            <div class="grid">
+                <div class="card" data-view="events">
+                    <h3>&#128197; Events</h3>
+                    <p>Schedule and manage choir rehearsals and performances</p>
+                </div>
+                <div class="card" data-view="members">
+                    <h3>&#128101; Members</h3>
+                    <p>Keep track of all choir members and their details</p>
+                </div>
+                <div class="card" data-view="attendance">
+                    <h3>&#9989; Attendance</h3>
+                    <p>Track member attendance at events</p>
+                </div>
+                <div class="card" data-view="messages">
+                    <h3>&#128172; Messages</h3>
+                    <p>Send announcements to choir members</p>
+                </div>
+                <div class="card" data-view="profile">
+                    <h3>&#9881;&#65039; Profile</h3>
+                    <p>Update your account information</p>
+                </div>
+                <div class="card" data-view="settings">
+                    <h3>&#128295; Settings</h3>
+                    <p>Customize your choir preferences</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVENTS VIEW -->
+        <div id="events-view" class="section">
+            <button class="back-btn" data-view="home">&larr; Back to Dashboard</button>
+            <h2>&#128197; Events Management</h2>
+
+            <div class="form-container">
+                <h3>Schedule New Event</h3>
+                <form id="event-form">
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" id="event-name" placeholder="e.g., Sunday Rehearsal" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="time" id="event-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="event-location" placeholder="e.g., Church Hall" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Schedule Event</button>
+                </form>
+            </div>
+            <div id="events-list"></div>
+        </div>
+
+        <!-- MEMBERS VIEW -->
+        <div id="members-view" class="section">
+            <button class="back-btn" data-view="home">&larr; Back to Dashboard</button>
+            <h2>&#128101; Member Management</h2>
+
+            <div class="form-container">
+                <h3>Add New Member</h3>
+                <form id="member-form">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="member-name" placeholder="Member's full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="member-email" placeholder="member@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Voice Part</label>
+                        <input type="text" id="member-voice" placeholder="Soprano, Alto, Tenor, Bass">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="member-phone" placeholder="Phone number">
+                    </div>
+                    <button type="submit" class="submit-btn">Add Member</button>
+                </form>
+            </div>
+            <div id="members-list"></div>
+        </div>
+
+        <!-- ATTENDANCE VIEW -->
+        <div id="attendance-view" class="section">
+            <button class="back-btn" data-view="home">&larr; Back to Dashboard</button>
+            <h2>&#9989; Attendance Tracking</h2>
+            <div class="form-container">
+                <p class="attendance-description">Track member attendance and generate reports</p>
+                <div id="attendance-list"></div>
+            </div>
+        </div>
+
+        <!-- MESSAGES VIEW -->
+        <div id="messages-view" class="section">
+            <button class="back-btn" data-view="home">&larr; Back to Dashboard</button>
+            <h2>&#128172; Send Announcement</h2>
+
+            <div class="form-container">
+                <form id="message-form">
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="message-subject" placeholder="Announcement subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea id="message-content" placeholder="Type your announcement..." rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Send to All Members</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="profile-view" class="section">
+            <button class="back-btn" data-view="home">&larr; Back to Dashboard</button>
+            <h2>&#9881;&#65039; Profile Settings</h2>
+
+            <div class="form-container">
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="profile-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="profile-email" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>New Password (leave blank to keep current)</label>
+                        <input type="password" id="profile-password" placeholder="Enter new password">
+                    </div>
+                    <button type="submit" class="submit-btn">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div id="settings-view" class="section">
+            <button class="back-btn" data-view="home">&larr; Back to Dashboard</button>
+            <h2>&#128295; Choir Settings</h2>
+
+            <div class="form-container">
+                <div class="form-group">
+                    <label>Choir Name</label>
+                    <input type="text" id="choir-name" placeholder="Your choir name">
+                </div>
+                <div class="form-group">
+                    <label>Choir Description</label>
+                    <textarea id="choir-description" placeholder="Describe your choir" rows="4"></textarea>
+                </div>
+                <button class="submit-btn" id="save-settings-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

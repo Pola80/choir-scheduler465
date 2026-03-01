@@ -1,0 +1,31 @@
+[Unit]
+Description=Choir Scheduler Application
+Documentation=file:///opt/choir-scheduler/README.md
+After=network.target
+
+[Service]
+Type=simple
+User=nodejs
+WorkingDirectory=/opt/choir-scheduler
+ExecStart=/usr/local/bin/node /opt/choir-scheduler/dist/server.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=choir-scheduler
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/choir-scheduler/logs
+
+# Resource limits
+MemoryLimit=500M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target
