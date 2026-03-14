@@ -4,8 +4,11 @@
   "description": "A comprehensive choir event and member management system",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "npm run build && node dist/server.js",
-    "build": "tsc",
+    "dev:api": "npm run build:api && node dist/server.js",
+    "dev:client": "cd client && npm run dev",
+    "build:api": "tsc",
+    "build:client": "cd client && npm install && npm run build",
+    "build": "npm run build:client && npm run build:api",
     "start": "node dist/server.js",
     "test": "jest --runInBand",
     "lint": "echo \"No linter configured\""
