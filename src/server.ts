@@ -60,8 +60,8 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../public')));
+// Serve React build output
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // Health check
 app.get('/health', (_req: Request, res: Response) => {
@@ -73,9 +73,9 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/members', memberRoutes);
 
-// SPA fallback
+// SPA fallback — let React Router handle client-side routes
 app.get('*', (_req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 // Error handler
