@@ -1,41 +1,66 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 interface Member {
-  id: number;
+  id: string;
   name: string;
-  email: string;
-  voice: string;
-  phone: string;
-}
-
-function load(): Member[] {
-  try { return JSON.parse(localStorage.getItem('members') || '[]'); } catch { return []; }
+  email?: string;
+  phone?: string;
+  role?: string;
 }
 
 export default function MembersView() {
   const navigate = useNavigate();
-  const [members, setMembers] = useState<Member[]>(load);
+  const { user } = useAuth();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('members', JSON.stringify(members));
-  }, [members]);
+    apiFetch('/api/v1/members')
+      .then(setMembers)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = e.currentTarget;
     const get = (n: string) => (f.elements.namedItem(n) as HTMLInputElement).value;
-    setMembers((prev) => [
-      ...prev,
-      { id: Date.now(), name: get('name'), email: get('email'), voice: get('voice'), phone: get('phone') },
-    ]);
-    f.reset();
+    try {
+      const created = await apiFetch('/api/v1/members', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: get('name'),
+          email: get('email') || undefined,
+          phone: get('phone') || undefined,
+          role: get('voice') || undefined,
+        }),
+      });
+      setMembers((prev) => [...prev, created]);
+      f.reset();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add member');
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await apiFetch(`/api/v1/members/${id}`, { method: 'DELETE' });
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete member');
+    }
   }
 
   return (
     <>
       <button className="back-btn" onClick={() => navigate('/dashboard')}>← Back to Dashboard</button>
       <h2>👥 Member Management</h2>
+
+      {error && <div className="message error">{error}</div>}
 
       <div className="form-container">
         <h3>Add New Member</h3>
@@ -46,7 +71,7 @@ export default function MembersView() {
           </div>
           <div className="form-group">
             <label>Email</label>
-            <input type="email" name="email" placeholder="member@email.com" required />
+            <input type="email" name="email" placeholder="member@email.com" />
           </div>
           <div className="form-group">
             <label>Voice Part</label>
@@ -60,21 +85,20 @@ export default function MembersView() {
         </form>
       </div>
 
-      {members.length === 0 ? (
+      {loading ? (
+        <div className="empty-state">Loading members...</div>
+      ) : members.length === 0 ? (
         <div className="empty-state">No members added yet</div>
       ) : (
         members.map((m) => (
           <div key={m.id} className="item">
             <h4>{m.name}</h4>
-            <p>📧 {m.email}</p>
-            <p>🎤 {m.voice || 'Not specified'}</p>
-            <p>📱 {m.phone || 'Not provided'}</p>
-            <button
-              className="delete-btn"
-              onClick={() => setMembers((prev) => prev.filter((x) => x.id !== m.id))}
-            >
-              Remove
-            </button>
+            {m.email && <p>📧 {m.email}</p>}
+            <p>🎤 {m.role || 'Not specified'}</p>
+            {m.phone && <p>📱 {m.phone}</p>}
+            {user?.role === 'admin' && (
+              <button className="delete-btn" onClick={() => handleDelete(m.id)}>Remove</button>
+            )}
           </div>
         ))
       )}
