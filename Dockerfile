@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -13,11 +13,14 @@ RUN npm ci
 # Copy source code
 COPY src/ ./src/
 
+# Copy client source for React build
+COPY client/ ./client/
+
 # Build TypeScript
 RUN npm run build
 
 # Runtime stage
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -30,11 +33,11 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm ci --only=production
 
-# Copy compiled code from builder
+# Copy compiled backend from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy public files
-COPY public/ ./public/
+# Copy compiled React frontend from builder
+COPY --from=builder /app/client/dist ./client/dist
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
