@@ -31,8 +31,12 @@ function createPool(): Pool {
   const config: PoolConfig = {
     connectionString,
     // Cloud Run connects via a Unix socket (/cloudsql/...) — no SSL needed there.
-    // For regular TCP connections (local dev), disable strict cert checking.
-    ssl: connectionString.includes('/cloudsql/') ? false : { rejectUnauthorized: false },
+    // For local dev (no SSL configured on Homebrew PG), disable SSL entirely.
+    ssl: connectionString.includes('/cloudsql/')
+      ? false
+      : process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false }
+        : false,
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,

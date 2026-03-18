@@ -119,7 +119,7 @@ router.get('/:id/stats', async (req: Request, res: Response): Promise<void> => {
     const stats = await database.get(
       `SELECT COUNT(*) as totalEvents,
               SUM(CASE WHEN attendance = 'present' THEN 1 ELSE 0 END) as attendedEvents
-       FROM event_members WHERE userId = ?`,
+       FROM event_members WHERE "userId" = ?`,
       [req.params.id],
     );
     res.json(stats);

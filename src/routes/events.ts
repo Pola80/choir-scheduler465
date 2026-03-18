@@ -46,7 +46,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response): Promise<vo
 
     const eventId = uuidv4();
     await database.run(
-      'INSERT INTO events (id, title, description, date, location, createdBy) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events (id, title, description, date, location, "createdBy") VALUES (?, ?, ?, ?, ?, ?)',
       [eventId, title, description || null, date, location || null, req.user!.id],
     );
 
@@ -67,7 +67,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response): Promise<
       location?: string;
     };
 
-    const event = await database.get('SELECT createdBy FROM events WHERE id = ?', [
+    const event = await database.get('SELECT "createdBy" FROM events WHERE id = ?', [
       req.params.id,
     ]);
 
@@ -96,7 +96,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response): Promise<
 // Delete event
 router.delete('/:id', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
-    const event = await database.get('SELECT createdBy FROM events WHERE id = ?', [
+    const event = await database.get('SELECT "createdBy" FROM events WHERE id = ?', [
       req.params.id,
     ]);
 
@@ -110,7 +110,7 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response): Promi
       return;
     }
 
-    await database.run('DELETE FROM event_members WHERE eventId = ?', [req.params.id]);
+    await database.run('DELETE FROM event_members WHERE "eventId" = ?', [req.params.id]);
     await database.run('DELETE FROM events WHERE id = ?', [req.params.id]);
     res.json({ message: 'Event deleted' });
   } catch (error) {
