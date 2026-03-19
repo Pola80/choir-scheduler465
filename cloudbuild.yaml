@@ -24,6 +24,8 @@ steps:
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
+      - '--add-cloudsql-instances=choir-scheduler-465:us-central1:choir-scheduler-db'
+      - '--set-env-vars=NODE_ENV=production,DATABASE_URL=postgresql://choir_user:KN0PuyVbqTMlbHwphyM1@/choir_scheduler?host=/cloudsql/choir-scheduler-465:us-central1:choir-scheduler-db,JWT_SECRET=$_JWT_SECRET'
 
 images:
   - 'gcr.io/$PROJECT_ID/choir-scheduler:$COMMIT_SHA'
