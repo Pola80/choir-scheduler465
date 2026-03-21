@@ -14,6 +14,7 @@
 import database from './database';
 
 function isConfigured(): boolean {
+  if (process.env.NODE_ENV === 'test') return false;
   return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
