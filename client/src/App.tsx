@@ -8,6 +8,7 @@ import EventsView from './pages/EventsView';
 import MembersView from './pages/MembersView';
 import AttendanceView from './pages/AttendanceView';
 import MessagesView from './pages/MessagesView';
+import NotificationsView from './pages/NotificationsView';
 import ProfileView from './pages/ProfileView';
 import SettingsView from './pages/SettingsView';
 
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="members" element={<MembersView />} />
           <Route path="attendance" element={<AttendanceView />} />
           <Route path="messages" element={<MessagesView />} />
+          <Route path="notifications" element={<NotificationsView />} />
           <Route path="profile" element={<ProfileView />} />
           <Route path="settings" element={<SettingsView />} />
         </Route>

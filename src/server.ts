@@ -8,6 +8,8 @@ import database from './database';
 import userRoutes from './routes/users';
 import eventRoutes from './routes/events';
 import memberRoutes from './routes/members';
+import messageRoutes from './routes/messages';
+import notificationRoutes from './routes/notifications';
 
 dotenv.config();
 
@@ -72,6 +74,8 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/members', memberRoutes);
+app.use('/api/v1/messages', messageRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 // SPA fallback — let React Router handle client-side routes
 app.get('*', (_req: Request, res: Response) => {

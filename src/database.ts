@@ -119,6 +119,31 @@ const database = {
         )
       `);
 
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS messages (
+          id          TEXT PRIMARY KEY,
+          "userId"    TEXT NOT NULL,
+          subject     TEXT NOT NULL,
+          content     TEXT NOT NULL,
+          "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY ("userId") REFERENCES users(id)
+        )
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id           TEXT PRIMARY KEY,
+          "userId"     TEXT NOT NULL,
+          type         TEXT NOT NULL,
+          title        TEXT NOT NULL,
+          body         TEXT,
+          read         BOOLEAN DEFAULT FALSE,
+          "relatedId"  TEXT,
+          "createdAt"  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY ("userId") REFERENCES users(id)
+        )
+      `);
+
       // Seed test user — only in non-production environments
       if (process.env.NODE_ENV !== 'production') {
         const seedEmail = process.env.SEED_USER_EMAIL;

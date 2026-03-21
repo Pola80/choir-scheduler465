@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import database from '../database';
 import { authMiddleware } from '../middleware/auth';
+import { createNotificationsForAllUsers } from './notifications';
+import { sendEventReminderEmail } from '../email';
 
 const router = Router();
 
@@ -51,6 +53,16 @@ router.post('/', authMiddleware, async (req: Request, res: Response): Promise<vo
     );
 
     const event = await database.get('SELECT * FROM events WHERE id = ?', [eventId]);
+
+    // Notify all users and send email (fire-and-forget)
+    const dateStr = new Date(date).toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+    });
+    const notifTitle = `New event: ${title}`;
+    const notifBody = `Scheduled for ${dateStr}${location ? ` at ${location}` : ''}`;
+    createNotificationsForAllUsers('event', notifTitle, notifBody, eventId).catch(console.error);
+    sendEventReminderEmail(title, date, location ?? null, req.user!.name).catch(console.error);
+
     res.status(201).json(event);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create event' });
