@@ -15,6 +15,8 @@ export default function EventsView() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ title: string; description: string; date: string; time: string; location: string }>({ title: '', description: '', date: '', time: '', location: '' });
 
   useEffect(() => {
     apiFetch('/api/v1/events')
@@ -23,7 +25,7 @@ export default function EventsView() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = e.currentTarget;
     const get = (n: string) => (f.elements.namedItem(n) as HTMLInputElement).value;
@@ -41,12 +43,50 @@ export default function EventsView() {
       });
       setEvents((prev) => [created, ...prev]);
       f.reset();
+      setError(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create event');
     }
   }
 
+  function startEdit(evt: Event) {
+    const [datePart, timePart] = evt.date.includes('T') ? evt.date.split('T') : [evt.date, ''];
+    setEditForm({
+      title: evt.title,
+      description: evt.description ?? '',
+      date: datePart,
+      time: timePart ? timePart.slice(0, 5) : '',
+      location: evt.location ?? '',
+    });
+    setEditingId(evt.id);
+  }
+
+  async function handleSaveEdit(id: string, e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = e.currentTarget;
+    const get = (n: string) => (f.elements.namedItem(n) as HTMLInputElement).value;
+    const date = get('date');
+    const time = get('time');
+    try {
+      const updated = await apiFetch(`/api/v1/events/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: get('title'),
+          description: get('description') || undefined,
+          date: time ? `${date}T${time}` : date,
+          location: get('location') || undefined,
+        }),
+      });
+      setEvents((prev) => prev.map((ev) => ev.id === id ? updated : ev));
+      setEditingId(null);
+      setError(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update event');
+    }
+  }
+
   async function handleDelete(id: string) {
+    if (!confirm('Delete this event?')) return;
     try {
       await apiFetch(`/api/v1/events/${id}`, { method: 'DELETE' });
       setEvents((prev) => prev.filter((e) => e.id !== id));
@@ -69,7 +109,7 @@ export default function EventsView() {
 
       <div className="form-container">
         <h3>Schedule New Event</h3>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleCreate}>
           <div className="form-group">
             <label>Event Name</label>
             <input type="text" name="title" placeholder="e.g., Sunday Rehearsal" required />
@@ -101,11 +141,45 @@ export default function EventsView() {
       ) : (
         events.map((evt) => (
           <div key={evt.id} className="item">
-            <h4>{evt.title}</h4>
-            {evt.description && <p>📝 {evt.description}</p>}
-            <p>📅 {formatDate(evt.date)}</p>
-            {evt.location && <p>📍 {evt.location}</p>}
-            <button className="delete-btn" onClick={() => handleDelete(evt.id)}>Delete</button>
+            {editingId === evt.id ? (
+              <form onSubmit={(e) => handleSaveEdit(evt.id, e)}>
+                <div className="form-group">
+                  <label>Event Name</label>
+                  <input type="text" name="title" defaultValue={editForm.title} required />
+                </div>
+                <div className="form-group">
+                  <label>Description</label>
+                  <input type="text" name="description" defaultValue={editForm.description} />
+                </div>
+                <div className="form-group">
+                  <label>Date</label>
+                  <input type="date" name="date" defaultValue={editForm.date} required />
+                </div>
+                <div className="form-group">
+                  <label>Time</label>
+                  <input type="time" name="time" defaultValue={editForm.time} />
+                </div>
+                <div className="form-group">
+                  <label>Location</label>
+                  <input type="text" name="location" defaultValue={editForm.location} />
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button type="submit" className="submit-btn" style={{ padding: '8px 18px' }}>Save</button>
+                  <button type="button" className="back-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <h4>{evt.title}</h4>
+                {evt.description && <p>📝 {evt.description}</p>}
+                <p>📅 {formatDate(evt.date)}</p>
+                {evt.location && <p>📍 {evt.location}</p>}
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button className="submit-btn" style={{ padding: '6px 16px', fontSize: 13 }} onClick={() => startEdit(evt)}>Edit</button>
+                  <button className="delete-btn" onClick={() => handleDelete(evt.id)}>Delete</button>
+                </div>
+              </>
+            )}
           </div>
         ))
       )}
