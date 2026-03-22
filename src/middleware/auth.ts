@@ -13,9 +13,9 @@ export interface AuthRequest extends Request {
   };
 }
 
-export function generateToken(userId: string, email: string, role: string = 'member'): string {
+export function generateToken(userId: string, email: string, role: string = 'member', name: string = ''): string {
   return jwt.sign(
-    { id: userId, email, role },
+    { id: userId, email, role, name },
     JWT_SECRET,
     { expiresIn: TOKEN_EXPIRY }
   );

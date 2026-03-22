@@ -34,9 +34,9 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       [userId, email, hashedPassword, name, 'member'],
     );
 
-    const token = generateToken(userId, email, 'member');
+    const token = generateToken(userId, email, 'member', name);
 
-    res.status(201).json({ id: userId, email, name, token });
+    res.status(201).json({ id: userId, email, name, role: 'member', token });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration failed' });
@@ -64,6 +64,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       user.id as string,
       user.email as string,
       user.role as string,
+      user.name as string,
     );
 
     res.json({
@@ -99,7 +100,7 @@ router.get('/me', authMiddleware, async (req: Request, res: Response): Promise<v
 // Update user profile
 router.put('/:id', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email } = req.body as { name?: string; email?: string };
+    const { name, password } = req.body as { name?: string; password?: string };
     const userId = req.params.id;
 
     if (req.user!.id !== userId && req.user!.role !== 'admin') {
@@ -107,22 +108,21 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response): Promise<
       return;
     }
 
-    if (email) {
-      const existing = await database.get(
-        'SELECT id FROM users WHERE email = ? AND id != ?',
-        [email, userId],
-      );
-      if (existing) {
-        res.status(409).json({ error: 'Email already in use' });
-        return;
-      }
+    // Fetch current values so we never overwrite with null
+    const current = await database.get('SELECT name FROM users WHERE id = ?', [userId]);
+    if (!current) {
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
 
-    await database.run('UPDATE users SET name = ?, email = ? WHERE id = ?', [
-      name || null,
-      email || null,
-      userId,
-    ]);
+    const newName = name || (current.name as string);
+
+    if (password) {
+      const hashed = bcrypt.hashSync(password, 10);
+      await database.run('UPDATE users SET name = ?, password = ? WHERE id = ?', [newName, hashed, userId]);
+    } else {
+      await database.run('UPDATE users SET name = ? WHERE id = ?', [newName, userId]);
+    }
 
     const updated = await database.get(
       'SELECT id, email, name, role FROM users WHERE id = ?',

@@ -17,6 +17,7 @@ export default function EventsView() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ title: string; description: string; date: string; time: string; location: string }>({ title: '', description: '', date: '', time: '', location: '' });
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch('/api/v1/events')
@@ -44,6 +45,8 @@ export default function EventsView() {
       setEvents((prev) => [created, ...prev]);
       f.reset();
       setError(null);
+      setSuccess('Event scheduled successfully.');
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create event');
     }
@@ -80,6 +83,8 @@ export default function EventsView() {
       setEvents((prev) => prev.map((ev) => ev.id === id ? updated : ev));
       setEditingId(null);
       setError(null);
+      setSuccess('Event updated successfully.');
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update event');
     }
@@ -105,7 +110,8 @@ export default function EventsView() {
       <button className="back-btn" onClick={() => navigate('/dashboard')}>← Back to Dashboard</button>
       <h2>📅 Events Management</h2>
 
-      {error && <div className="message error">{error}</div>}
+      {error   && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginBottom: 12 }}>{error}</div>}
+      {success && <div style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', marginBottom: 12 }}>{success}</div>}
 
       <div className="form-container">
         <h3>Schedule New Event</h3>
