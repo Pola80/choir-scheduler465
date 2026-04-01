@@ -22,8 +22,13 @@ export default function CreateRehearsalScreen({ navigation }) {
       createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
     };
 
-    await saveRehearsal(rehearsal);
-    navigation.goBack();
+    try {
+      await saveRehearsal(rehearsal);
+      navigation.goBack();
+    } catch (e) {
+      console.error('Save failed:', e);
+      alert('Failed to save rehearsal. Please try again.');
+    }
   }
 
   return (

@@ -61,7 +61,7 @@ export async function getRehearsal(id) {
     return res.json();
   }, async () => {
     const all = await loadRehearsals();
-    return all.find(r => r.id === id) || null;
+    return all.find(r => String(r.id) === String(id)) || null;
   });
 }
 
@@ -72,7 +72,7 @@ export async function deleteRehearsal(id) {
     return true;
   }, async () => {
     const all = await loadRehearsals();
-    const remaining = all.filter(r => r.id !== id);
+    const remaining = all.filter(r => String(r.id) !== String(id));
     await AsyncStorage.setItem(KEY, JSON.stringify(remaining));
     return true;
   });

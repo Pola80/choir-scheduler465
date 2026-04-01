@@ -15,8 +15,8 @@ export default function RehearsalDetailsScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{rehearsal.title}</Text>
-      <Text style={styles.meta}>{rehearsal.date} · {rehearsal.time}</Text>
-      <Text style={styles.meta}>Created: {rehearsal.createdAt}</Text>
+      <Text style={styles.meta}>{rehearsal.date}{rehearsal.time ? ` · ${rehearsal.time}` : ''}</Text>
+      <Text style={styles.meta}>Created: {rehearsal.createdAt || rehearsal.created_at || 'N/A'}</Text>
       <View style={{marginTop:20}}>
         <Button title="Delete Rehearsal" color="#d00" onPress={async () => {
           await deleteRehearsal(id);

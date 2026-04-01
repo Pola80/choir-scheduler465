@@ -37,13 +37,22 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS rehearsals (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
-        date TIMESTAMP NOT NULL,
+        date VARCHAR(20) NOT NULL,
+        time VARCHAR(10),
         duration INT,
         location VARCHAR(255),
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Add time column if it doesn't exist (for existing tables)
+    await pool.query(`
+      ALTER TABLE rehearsals ADD COLUMN IF NOT EXISTS time VARCHAR(10);
+    `).catch(() => {});
+    // Change date column type if it's still TIMESTAMP (for existing tables)
+    await pool.query(`
+      ALTER TABLE rehearsals ALTER COLUMN date TYPE VARCHAR(20) USING date::VARCHAR(20);
+    `).catch(() => {});
     console.log('Database schema initialized');
   } catch (err) {
     console.error('Database initialization error:', err);
@@ -81,10 +90,13 @@ app.get('/rehearsals/:id', async (req, res) => {
 
 app.post('/rehearsals', async (req, res) => {
   try {
-    const { title, date, duration, location, notes } = req.body;
+    const { title, date, time, duration, location, notes } = req.body;
+    if (!title || !date) {
+      return res.status(400).json({ error: 'Title and date are required' });
+    }
     const result = await pool.query(
-      'INSERT INTO rehearsals (title, date, duration, location, notes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [title, date, duration, location, notes]
+      'INSERT INTO rehearsals (title, date, time, duration, location, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [title, date, time || null, duration || null, location || null, notes || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

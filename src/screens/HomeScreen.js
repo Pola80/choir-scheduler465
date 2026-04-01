@@ -17,11 +17,11 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.title}>Choir Rehearsals</Text>
       <FlatList
         data={rehearsals}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Details', { id: item.id })}>
+          <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Details', { id: String(item.id) })}>
             <Text style={styles.itemTitle}>{item.title}</Text>
-            <Text style={styles.itemSub}>{item.date} · {item.time}</Text>
+            <Text style={styles.itemSub}>{item.date}{item.time ? ` · ${item.time}` : ''}</Text>
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={{marginTop:20}}>No rehearsals scheduled yet.</Text>}
