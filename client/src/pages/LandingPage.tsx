@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const features = [
   { icon: '📅', color: '#ede9fe', title: 'Event Management', desc: 'Schedule rehearsals, concerts, and special events. Track every detail from venue to attendance in one place.' },
@@ -40,6 +40,9 @@ function AboutSection() {
   const [tab, setTab] = useState<'setup' | 'preview' | 'reply'>('setup');
   const [profile, setProfile] = useState<ChoirProfile>(defaultProfile);
   const [copied, setCopied] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     try {
@@ -53,6 +56,20 @@ function AboutSection() {
     setProfile(updated);
     localStorage.setItem('choirProfile', JSON.stringify(updated));
   }
+
+  function switchTab(newTab: 'setup' | 'preview' | 'reply') {
+    if (newTab === tab) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setTab(newTab);
+      setIsTransitioning(false);
+    }, 200);
+  }
+
+  // Completion calculation
+  const fields: (keyof ChoirProfile)[] = ['name', 'founded', 'style', 'mission', 'verse', 'members', 'location', 'builtBy'];
+  const filledCount = fields.filter(f => profile[f].trim() !== '').length;
+  const completionPct = Math.round((filledCount / fields.length) * 100);
 
   const replyText = `Hi there 👋
 
@@ -79,95 +96,219 @@ Managed with Choir Scheduler — https://choir-scheduler-sc4ku4ttcq-uc.a.run.app
     });
   }
 
-  const filled = profile.name || profile.location || profile.mission;
+  const downloadAsImage = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  // shared tab button style
-  function tabStyle(active: boolean): React.CSSProperties {
-    return {
-      padding: '8px 22px', borderRadius: 8, border: 'none', cursor: 'pointer',
-      fontWeight: 600, fontSize: 14, transition: 'all 0.15s',
-      background: active ? '#7c3aed' : 'transparent',
-      color: active ? '#fff' : '#6b7280',
-    };
-  }
+    const w = 800, h = 500;
+    canvas.width = w;
+    canvas.height = h;
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 14px', borderRadius: 8,
-    border: '1px solid #e5e7eb', fontSize: 14, outline: 'none',
-    background: '#fafafa', boxSizing: 'border-box',
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, '#4f46e5');
+    grad.addColorStop(1, '#7c3aed');
+    ctx.fillStyle = grad;
+    ctx.roundRect(0, 0, w, h, 20);
+    ctx.fill();
+
+    // Decorative circles
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(680, 80, 120, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(100, 420, 80, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Music note icon
+    ctx.font = '48px serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText('♪', 40, 80);
+
+    // Choir name
+    ctx.font = 'bold 36px Inter, sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(profile.name || 'Your Choir', 40, 140);
+
+    // Location & founded
+    ctx.font = '16px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    const subline = [profile.location, profile.founded ? `Est. ${profile.founded}` : ''].filter(Boolean).join(' · ');
+    ctx.fillText(subline || 'Add your details', 40, 175);
+
+    // Divider
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40, 200); ctx.lineTo(w - 40, 200); ctx.stroke();
+
+    // Mission
+    if (profile.mission) {
+      ctx.font = '15px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      const words = profile.mission.split(' ');
+      let line = '';
+      let y = 235;
+      for (const word of words) {
+        const test = line + word + ' ';
+        if (ctx.measureText(test).width > w - 80 && line) {
+          ctx.fillText(line.trim(), 40, y);
+          line = word + ' ';
+          y += 24;
+          if (y > 320) { ctx.fillText('...', 40, y); break; }
+        } else line = test;
+      }
+      if (line && y <= 320) ctx.fillText(line.trim(), 40, y);
+    }
+
+    // Stats bar at bottom
+    const statsY = h - 100;
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.roundRect(30, statsY, w - 60, 70, 12);
+    ctx.fill();
+
+    const stats = [
+      { icon: '👥', label: 'Members', val: profile.members || '—' },
+      { icon: '🎼', label: 'Style', val: profile.style || '—' },
+      { icon: '🛠', label: 'Built by', val: profile.builtBy || '—' },
+    ];
+    stats.forEach((s, i) => {
+      const x = 60 + i * ((w - 120) / 3);
+      ctx.font = '20px serif';
+      ctx.fillText(s.icon, x, statsY + 30);
+      ctx.font = 'bold 15px Inter, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(s.val, x + 30, statsY + 30);
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillText(s.label, x + 30, statsY + 50);
+      ctx.fillStyle = '#fff';
+    });
+
+    // Footer
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillText('♪ Managed with Choir Scheduler', w - 230, h - 18);
+
+    // Download
+    const link = document.createElement('a');
+    link.download = `${(profile.name || 'choir-profile').replace(/\s+/g, '-').toLowerCase()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, [profile]);
+
+  const shareToWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(replyText)}`, '_blank');
   };
 
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontWeight: 600, fontSize: 13,
-    color: '#374151', marginBottom: 5,
+  const shareViaEmail = () => {
+    window.open(`mailto:?subject=${encodeURIComponent(`About ${profile.name || 'Our Choir'}`)}&body=${encodeURIComponent(replyText)}`, '_blank');
   };
+
+  const hasSomeData = profile.name || profile.location || profile.mission;
+
+  const tabConfig = [
+    { key: 'setup' as const, icon: '⚙️', label: 'Setup', desc: 'Enter details' },
+    { key: 'preview' as const, icon: '👁', label: 'Preview', desc: 'View card' },
+    { key: 'reply' as const, icon: '📋', label: 'Share', desc: 'Copy & send' },
+  ];
+
+  const formFields = [
+    { field: 'name' as const, label: 'Choir Name', placeholder: 'e.g. Grace Community Choir', icon: '🎵' },
+    { field: 'founded' as const, label: 'Founded Year', placeholder: 'e.g. 2005', icon: '📅' },
+    { field: 'style' as const, label: 'Choir Style', placeholder: 'e.g. Gospel, Classical, Contemporary', icon: '🎼' },
+    { field: 'location' as const, label: 'Location', placeholder: 'e.g. Lagos, Nigeria', icon: '📍' },
+    { field: 'members' as const, label: 'No. of Members', placeholder: 'e.g. 45', icon: '👥' },
+    { field: 'builtBy' as const, label: 'App Built By', placeholder: 'Your name or organisation', icon: '🛠' },
+  ];
 
   return (
-    <section style={{ padding: '80px 20px', background: '#f9fafb' }} id="about">
-      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+    <section className="about-section" id="about">
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      <div className="about-container">
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            display: 'inline-block', background: '#ede9fe', color: '#7c3aed',
-            borderRadius: 20, padding: '4px 16px', fontSize: 13, fontWeight: 700,
-            marginBottom: 14,
-          }}>About</div>
-          <h2 style={{ fontSize: 32, fontWeight: 800, color: '#111827', margin: '0 0 12px' }}>
-            Your Choir Profile
-          </h2>
-          <p style={{ color: '#6b7280', fontSize: 16, maxWidth: 520, margin: '0 auto' }}>
-            Fill in your choir's details to generate a personalised profile card and ready-to-send introduction — works for any choir.
-          </p>
+        <div className="lp-section-head">
+          <div className="lp-tag">About</div>
+          <h2>Your Choir Profile</h2>
+          <p>Create a beautiful profile card for your choir. Fill in the details, preview your card, and share it anywhere.</p>
         </div>
 
-        {/* Card */}
-        <div style={{
-          background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.06)', overflow: 'hidden',
-        }}>
-          {/* Tabs */}
-          <div style={{
-            display: 'flex', gap: 4, padding: '16px 20px',
-            borderBottom: '1px solid #e5e7eb', background: '#f9fafb',
-          }}>
-            <button style={tabStyle(tab === 'setup')}   onClick={() => setTab('setup')}>Setup</button>
-            <button style={tabStyle(tab === 'preview')} onClick={() => setTab('preview')}>Preview</button>
-            <button style={tabStyle(tab === 'reply')}   onClick={() => setTab('reply')}>Reply</button>
+        {/* Progress Ring */}
+        <div className="about-progress-ring-wrap">
+          <svg className="about-progress-ring" viewBox="0 0 80 80">
+            <circle className="about-progress-track" cx="40" cy="40" r="34" />
+            <circle
+              className="about-progress-fill"
+              cx="40" cy="40" r="34"
+              strokeDasharray={`${2 * Math.PI * 34}`}
+              strokeDashoffset={`${2 * Math.PI * 34 * (1 - completionPct / 100)}`}
+            />
+          </svg>
+          <div className="about-progress-label">
+            <span className="about-progress-pct">{completionPct}%</span>
+            <span className="about-progress-text">complete</span>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <div className="about-card">
+          {/* Tab Navigation */}
+          <div className="about-tabs">
+            {tabConfig.map((t, idx) => (
+              <button
+                key={t.key}
+                className={`about-tab ${tab === t.key ? 'active' : ''}`}
+                onClick={() => switchTab(t.key)}
+              >
+                <span className="about-tab-step">{idx + 1}</span>
+                <span className="about-tab-icon">{t.icon}</span>
+                <div className="about-tab-text">
+                  <span className="about-tab-label">{t.label}</span>
+                  <span className="about-tab-desc">{t.desc}</span>
+                </div>
+              </button>
+            ))}
           </div>
 
-          <div style={{ padding: '28px 28px 32px' }}>
-
+          {/* Content */}
+          <div
+            ref={contentRef}
+            className={`about-content ${isTransitioning ? 'fade-out' : 'fade-in'}`}
+          >
             {/* ── Setup Tab ── */}
             {tab === 'setup' && (
-              <div>
-                <p style={{ color: '#6b7280', fontSize: 14, marginTop: 0, marginBottom: 24 }}>
-                  Fill in your choir's details. Everything is saved automatically in your browser.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 24px' }}>
-                  {[
-                    { field: 'name',     label: 'Choir Name',    placeholder: 'e.g. Grace Community Choir' },
-                    { field: 'founded',  label: 'Founded Year',  placeholder: 'e.g. 2005' },
-                    { field: 'style',    label: 'Choir Style',   placeholder: 'e.g. Gospel, Classical, Contemporary' },
-                    { field: 'location', label: 'Location',      placeholder: 'e.g. Lagos, Nigeria' },
-                    { field: 'members',  label: 'No. of Members',placeholder: 'e.g. 45' },
-                    { field: 'builtBy',  label: 'App Built By',  placeholder: 'Your name or organisation' },
-                  ].map(({ field, label, placeholder }) => (
-                    <div key={field}>
-                      <label style={labelStyle}>{label}</label>
+              <div className="about-setup">
+                <div className="about-setup-header">
+                  <h3>Choir Details</h3>
+                  <p>Fill in your choir's information. Everything saves automatically to your browser.</p>
+                </div>
+
+                <div className="about-form-grid">
+                  {formFields.map(({ field, label, placeholder, icon }) => (
+                    <div key={field} className="about-form-field">
+                      <label className="about-form-label">
+                        <span className="about-form-label-icon">{icon}</span>
+                        {label}
+                        {profile[field] && <span className="about-field-check">✓</span>}
+                      </label>
                       <input
-                        style={inputStyle}
+                        className="about-form-input"
                         placeholder={placeholder}
-                        value={profile[field as keyof ChoirProfile]}
-                        onChange={(e) => handleChange(field as keyof ChoirProfile, e.target.value)}
+                        value={profile[field]}
+                        onChange={(e) => handleChange(field, e.target.value)}
                       />
                     </div>
                   ))}
                 </div>
 
-                <div style={{ marginTop: 18 }}>
-                  <label style={labelStyle}>Mission Statement</label>
+                <div className="about-form-full">
+                  <label className="about-form-label">
+                    <span className="about-form-label-icon">🌟</span>
+                    Mission Statement
+                    {profile.mission && <span className="about-field-check">✓</span>}
+                  </label>
                   <textarea
-                    style={{ ...inputStyle, resize: 'vertical' }}
+                    className="about-form-textarea"
                     rows={3}
                     placeholder="What is your choir's purpose and vision?"
                     value={profile.mission}
@@ -175,142 +316,161 @@ Managed with Choir Scheduler — https://choir-scheduler-sc4ku4ttcq-uc.a.run.app
                   />
                 </div>
 
-                <div style={{ marginTop: 18 }}>
-                  <label style={labelStyle}>Bible Verse / Motto <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span></label>
+                <div className="about-form-full">
+                  <label className="about-form-label">
+                    <span className="about-form-label-icon">📖</span>
+                    Bible Verse / Motto
+                    <span className="about-form-optional">optional</span>
+                    {profile.verse && <span className="about-field-check">✓</span>}
+                  </label>
                   <input
-                    style={inputStyle}
-                    placeholder='e.g. "Sing to the LORD a new song" — Psalm 96:1'
+                    className="about-form-input"
+                    placeholder='"Sing to the LORD a new song" — Psalm 96:1'
                     value={profile.verse}
                     onChange={(e) => handleChange('verse', e.target.value)}
                   />
                 </div>
 
-                <button
-                  onClick={() => setTab('preview')}
-                  style={{
-                    marginTop: 28, background: '#7c3aed', color: '#fff', border: 'none',
-                    borderRadius: 10, padding: '11px 28px', fontWeight: 700, fontSize: 15,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Preview Profile →
-                </button>
+                <div className="about-form-actions">
+                  <button className="btn btn-primary btn-lg" onClick={() => switchTab('preview')}>
+                    Preview Profile →
+                  </button>
+                  <span className="about-form-hint">
+                    {filledCount} of {fields.length} fields completed
+                  </span>
+                </div>
               </div>
             )}
 
             {/* ── Preview Tab ── */}
             {tab === 'preview' && (
-              <div>
-                {!filled ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
-                    <div style={{ fontSize: 40, marginBottom: 12 }}>🎵</div>
-                    <p>Fill in your details in the Setup tab to see your profile here.</p>
-                    <button onClick={() => setTab('setup')} style={{ marginTop: 8, background: 'none', border: 'none', color: '#7c3aed', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Go to Setup →</button>
+              <div className="about-preview">
+                {!hasSomeData ? (
+                  <div className="about-empty">
+                    <div className="about-empty-icon">🎵</div>
+                    <h3>No profile yet</h3>
+                    <p>Fill in your choir's details in the Setup tab to see a beautiful preview here.</p>
+                    <button className="btn btn-primary" onClick={() => switchTab('setup')}>Go to Setup →</button>
                   </div>
                 ) : (
-                  <div>
-                    {/* Profile card */}
-                    <div style={{
-                      background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                      borderRadius: 14, padding: '28px 28px 24px', color: '#fff', marginBottom: 20,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                        <div style={{
-                          width: 56, height: 56, borderRadius: '50%',
-                          background: 'rgba(255,255,255,0.2)', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center', fontSize: 26,
-                        }}>♪</div>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: 22 }}>{profile.name || 'Your Choir'}</div>
-                          <div style={{ opacity: 0.8, fontSize: 14 }}>{profile.location}{profile.location && profile.founded ? ' · ' : ''}{profile.founded ? `Est. ${profile.founded}` : ''}</div>
+                  <>
+                    {/* Profile Card */}
+                    <div className="about-profile-card">
+                      <div className="about-profile-card-bg" />
+                      <div className="about-profile-header">
+                        <div className="about-profile-avatar">
+                          <span>♪</span>
                         </div>
+                        <div className="about-profile-info">
+                          <h3>{profile.name || 'Your Choir'}</h3>
+                          <p>
+                            {profile.location}{profile.location && profile.founded ? ' · ' : ''}
+                            {profile.founded ? `Est. ${profile.founded}` : ''}
+                          </p>
+                        </div>
+                        {completionPct === 100 && (
+                          <div className="about-profile-badge">
+                            <span>✨</span> Complete
+                          </div>
+                        )}
                       </div>
+
                       {profile.verse && (
-                        <div style={{
-                          background: 'rgba(255,255,255,0.12)', borderRadius: 10,
-                          padding: '10px 14px', fontSize: 13, fontStyle: 'italic',
-                          marginBottom: 16, lineHeight: 1.5,
-                        }}>
-                          "{profile.verse}"
+                        <div className="about-profile-verse">
+                          <span className="about-verse-mark">"</span>
+                          {profile.verse}
                         </div>
                       )}
+
                       {profile.mission && (
-                        <p style={{ margin: 0, fontSize: 14, opacity: 0.9, lineHeight: 1.6 }}>{profile.mission}</p>
+                        <p className="about-profile-mission">{profile.mission}</p>
                       )}
                     </div>
 
-                    {/* Stats row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+                    {/* Stats Grid */}
+                    <div className="about-stats-grid">
                       {[
-                        { icon: '👥', label: 'Members',   value: profile.members  || '—' },
-                        { icon: '🎼', label: 'Style',     value: profile.style    || '—' },
-                        { icon: '🛠', label: 'Built by',  value: profile.builtBy  || '—' },
+                        { icon: '👥', label: 'Members', value: profile.members || '—', color: '#ede9fe' },
+                        { icon: '🎼', label: 'Style', value: profile.style || '—', color: '#dbeafe' },
+                        { icon: '🛠', label: 'Built by', value: profile.builtBy || '—', color: '#fef3c7' },
                       ].map((s) => (
-                        <div key={s.label} style={{
-                          background: '#f5f3ff', borderRadius: 10, padding: '14px 12px', textAlign: 'center',
-                        }}>
-                          <div style={{ fontSize: 22 }}>{s.icon}</div>
-                          <div style={{ fontWeight: 700, fontSize: 14, marginTop: 4, color: '#1f2937', wordBreak: 'break-word' }}>{s.value}</div>
-                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{s.label}</div>
+                        <div key={s.label} className="about-stat-card" style={{ background: s.color }}>
+                          <div className="about-stat-icon">{s.icon}</div>
+                          <div className="about-stat-value">{s.value}</div>
+                          <div className="about-stat-label">{s.label}</div>
                         </div>
                       ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <button onClick={() => setTab('reply')} style={{
-                        background: '#7c3aed', color: '#fff', border: 'none',
-                        borderRadius: 10, padding: '10px 22px', fontWeight: 700,
-                        fontSize: 14, cursor: 'pointer',
-                      }}>Get Reply Text →</button>
-                      <button onClick={() => setTab('setup')} style={{
-                        background: '#f3f4f6', color: '#374151', border: 'none',
-                        borderRadius: 10, padding: '10px 22px', fontWeight: 600,
-                        fontSize: 14, cursor: 'pointer',
-                      }}>Edit Details</button>
+                    {/* Action Buttons */}
+                    <div className="about-preview-actions">
+                      <button className="btn btn-primary" onClick={() => switchTab('reply')}>
+                        Share Profile →
+                      </button>
+                      <button className="btn btn-secondary" onClick={downloadAsImage}>
+                        📥 Download as Image
+                      </button>
+                      <button className="btn btn-ghost" onClick={() => switchTab('setup')}>
+                        ✏️ Edit Details
+                      </button>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             )}
 
-            {/* ── Reply Tab ── */}
+            {/* ── Reply / Share Tab ── */}
             {tab === 'reply' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <p style={{ margin: 0, color: '#6b7280', fontSize: 14 }}>
-                    Your ready-to-send choir introduction. Copy and share anywhere.
-                  </p>
-                  <button
-                    onClick={copyReply}
-                    style={{
-                      background: copied ? '#059669' : '#7c3aed', color: '#fff', border: 'none',
-                      borderRadius: 8, padding: '8px 18px', fontWeight: 700, fontSize: 13,
-                      cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s',
-                    }}
-                  >
-                    {copied ? '✓ Copied!' : 'Copy'}
+              <div className="about-reply">
+                <div className="about-reply-header">
+                  <div>
+                    <h3>Share Your Profile</h3>
+                    <p>Copy your choir introduction or share it directly via your favourite platform.</p>
+                  </div>
+                </div>
+
+                {/* Share Buttons */}
+                <div className="about-share-row">
+                  <button className="about-share-btn about-share-copy" onClick={copyReply}>
+                    {copied ? '✓ Copied!' : '📋 Copy Text'}
+                  </button>
+                  <button className="about-share-btn about-share-whatsapp" onClick={shareToWhatsApp}>
+                    💬 WhatsApp
+                  </button>
+                  <button className="about-share-btn about-share-email" onClick={shareViaEmail}>
+                    ✉️ Email
+                  </button>
+                  <button className="about-share-btn about-share-download" onClick={downloadAsImage}>
+                    📥 Image
                   </button>
                 </div>
-                <pre style={{
-                  background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10,
-                  padding: '18px 20px', fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word', color: '#374151', margin: 0,
-                }}>{replyText}</pre>
-                <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                  <button onClick={copyReply} style={{
-                    background: copied ? '#059669' : '#7c3aed', color: '#fff', border: 'none',
-                    borderRadius: 10, padding: '10px 22px', fontWeight: 700, fontSize: 14,
-                    cursor: 'pointer', transition: 'background 0.2s',
-                  }}>{copied ? '✓ Copied!' : 'Copy to Clipboard'}</button>
-                  <button onClick={() => setTab('setup')} style={{
-                    background: '#f3f4f6', color: '#374151', border: 'none',
-                    borderRadius: 10, padding: '10px 22px', fontWeight: 600,
-                    fontSize: 14, cursor: 'pointer',
-                  }}>Edit Details</button>
+
+                {/* Preview text */}
+                <pre className="about-reply-text">{replyText}</pre>
+
+                <div className="about-reply-footer">
+                  <button className="btn btn-primary" onClick={copyReply}>
+                    {copied ? '✓ Copied to Clipboard!' : 'Copy to Clipboard'}
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => switchTab('setup')}>
+                    ✏️ Edit Details
+                  </button>
                 </div>
               </div>
             )}
+          </div>
+        </div>
 
+        {/* Testimonial / Quote */}
+        <div className="about-testimonial">
+          <div className="about-testimonial-quote">"</div>
+          <p>Choir Scheduler has transformed how we organise our rehearsals and performances. It&apos;s like having a dedicated assistant for our entire choir.</p>
+          <div className="about-testimonial-author">
+            <div className="about-testimonial-avatar">M</div>
+            <div>
+              <div className="about-testimonial-name">Music Director</div>
+              <div className="about-testimonial-role">Grace Community Choir</div>
+            </div>
           </div>
         </div>
       </div>
@@ -498,6 +658,7 @@ export default function LandingPage() {
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           <a href="#about">About</a>
+          <a href="/privacy">Privacy Policy</a>
         </div>
         <div className="lp-footer-copy">© {new Date().getFullYear()} Choir Scheduler. All rights reserved.</div>
       </footer>
