@@ -1,0 +1,221 @@
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+  
+  default_tags {
+    tags = {
+      Environment = var.environment
+      Project     = var.app_name
+      ManagedBy   = "Terraform"
+    }
+  }
+}
+
+# Enable required APIs
+resource "google_project_service" "required_apis" {
+  for_each = toset([
+    "cloudrun.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "containerregistry.googleapis.com",
+    "sqladmin.googleapis.com"
+  ])
+
+  service            = each.value
+  disable_on_destroy = false
+}
+
+# Artifact Registry Repository for Docker images
+resource "google_artifact_registry_repository" "docker_repo" {
+  location      = var.region
+  repository_id = "choir-scheduler"
+  description   = "Docker repository for Choir Scheduler application"
+  format        = "DOCKER"
+
+  depends_on = [google_project_service.required_apis]
+}
+
+# Cloud SQL PostgreSQL Instance
+resource "google_sql_database_instance" "postgres" {
+  name             = "${var.app_name}-db"
+  database_version = "POSTGRES_15"
+  region           = var.region
+
+  settings {
+    tier              = var.db_tier
+    availability_type = "ZONAL"
+    disk_size         = 10
+    disk_autoresize   = true
+
+    backup_configuration {
+      enabled    = true
+      start_time = "03:00"
+    }
+
+    ip_configuration {
+      ipv4_enabled = false
+    }
+
+    database_flags {
+      name  = "max_connections"
+      value = "100"
+    }
+  }
+
+  deletion_protection = true
+
+  depends_on = [google_project_service.required_apis]
+}
+
+# Database inside the instance
+resource "google_sql_database" "choir_db" {
+  name     = var.db_name
+  instance = google_sql_database_instance.postgres.name
+}
+
+# Application user
+resource "google_sql_user" "choir_app_user" {
+  name     = var.db_user
+  instance = google_sql_database_instance.postgres.name
+  password = var.db_password
+}
+
+# Grant Cloud Run service account permission to connect to Cloud SQL
+resource "google_project_iam_member" "cloud_run_sql_client" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+}
+
+# Cloud Run Service
+resource "google_cloud_run_service" "choir_scheduler" {
+  name     = var.app_name
+  location = var.region
+
+  template {
+    spec {
+      containers {
+        image = var.container_image != "" ? var.container_image : "${google_artifact_registry_repository.docker_repo.repository_url}/choir-scheduler:latest"
+
+        ports {
+          container_port = var.app_port
+        }
+
+        env {
+          name  = "NODE_ENV"
+          value = var.environment
+        }
+
+        env {
+          name  = "PORT"
+          value = var.app_port
+        }
+
+        env {
+          name  = "DATABASE_URL"
+          value = "postgresql://${var.db_user}:${var.db_password}@/${var.db_name}?host=/cloudsql/${google_sql_database_instance.postgres.connection_name}"
+        }
+
+        resources {
+          limits = {
+            cpu    = var.container_cpu
+            memory = var.container_memory
+          }
+        }
+      }
+
+      service_account_email = google_service_account.cloud_run_sa.email
+      timeout_seconds       = 300
+    }
+
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/maxScale"     = var.max_instances
+        "autoscaling.knative.dev/minScale"     = var.min_instances
+        "run.googleapis.com/cloudsql-instances" = google_sql_database_instance.postgres.connection_name
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+  depends_on = [
+    google_project_service.required_apis,
+    google_sql_database_instance.postgres,
+    google_project_iam_member.cloud_run_sql_client,
+  ]
+}
+
+# Service Account for Cloud Run
+resource "google_service_account" "cloud_run_sa" {
+  account_id   = "${var.app_name}-sa"
+  display_name = "Service Account for ${var.app_name}"
+}
+
+# Allow public access to Cloud Run service (controlled by var.allow_public_access)
+resource "google_cloud_run_service_iam_member" "public_access" {
+  count    = var.allow_public_access ? 1 : 0
+  service  = google_cloud_run_service.choir_scheduler.name
+  location = google_cloud_run_service.choir_scheduler.location
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# Cloud Storage Bucket for backups (optional)
+resource "google_storage_bucket" "backups" {
+  count         = var.create_backup_bucket ? 1 : 0
+  name          = "${var.project_id}-choir-backups"
+  location      = var.region
+  force_destroy = var.force_destroy_buckets
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    condition {
+      num_newer_versions = 3
+    }
+    action {
+      type = "Delete"
+    }
+  }
+}
+
+# Outputs
+output "cloud_run_url" {
+  description = "URL of the deployed Cloud Run service"
+  value       = google_cloud_run_service.choir_scheduler.status[0].url
+}
+
+output "artifact_registry_url" {
+  description = "URL of the Artifact Registry repository"
+  value       = google_artifact_registry_repository.docker_repo.repository_url
+}
+
+output "service_account_email" {
+  description = "Service account email for Cloud Run"
+  value       = google_service_account.cloud_run_sa.email
+}
+
+output "backup_bucket_name" {
+  description = "Name of the backup bucket"
+  value       = try(google_storage_bucket.backups[0].name, "")
+}
+
+output "cloud_sql_instance_connection_name" {
+  description = "Cloud SQL instance connection name (for Cloud SQL Auth Proxy / local dev)"
+  value       = google_sql_database_instance.postgres.connection_name
+}
