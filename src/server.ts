@@ -17,6 +17,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Trust the proxy in Cloud Run / load balancer so req.ip honors X-Forwarded-For
+app.set('trust proxy', true);
+
 // Security headers — no unsafe-inline: CSS and JS are served from external files
 app.use(
   helmet({
@@ -59,6 +62,7 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Too many requests from this IP, please try again later.',
+  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for']?.toString() || '',
 });
 app.use(limiter);
 

@@ -11,6 +11,7 @@ import MessagesView from './pages/MessagesView';
 import NotificationsView from './pages/NotificationsView';
 import ProfileView from './pages/ProfileView';
 import SettingsView from './pages/SettingsView';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="profile" element={<ProfileView />} />
           <Route path="settings" element={<SettingsView />} />
         </Route>
+        <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

@@ -1,0 +1,39 @@
+# AWS Terraform Configuration Example for Choir Scheduler
+# Copy this file to terraform.tfvars and fill in the required values
+
+# AWS Configuration
+aws_region  = "us-east-1"
+app_name    = "choir-scheduler"
+environment = "production"
+
+# VPC and Networking
+vpc_cidr               = "10.0.0.0/16"
+public_subnet_cidrs    = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs   = ["10.0.10.0/24", "10.0.11.0/24"]
+
+# Container Configuration
+container_port = 8080
+container_cpu  = "512"       # Options: 256, 512, 1024, 2048, 4096
+container_memory = "1024"    # Must be compatible with CPU
+
+# ECS Scaling
+desired_count = 2
+min_capacity  = 1
+max_capacity  = 10
+
+# Database Configuration
+db_engine_version      = "15.3"
+db_instance_class      = "db.t3.micro"  # Options: db.t3.micro, db.t3.small, db.t3.medium, etc.
+db_allocated_storage   = 20
+db_name                = "choir_scheduler"
+db_user                = "choiradmin"
+db_password            = "CHANGE_ME_TO_SECURE_PASSWORD"  # Use a strong password!
+db_multi_az            = true
+db_deletion_protection = true
+skip_final_snapshot    = false
+
+# Application Secrets
+jwt_secret = "CHANGE_ME_TO_YOUR_JWT_SECRET"  # Use a strong secret!
+
+# Logging
+log_retention_days = 7
