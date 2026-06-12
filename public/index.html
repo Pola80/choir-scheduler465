@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choir Scheduler - Sign In</title>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>Choir Scheduler</h1>
+            <p>Manage Your Choir with Ease</p>
+        </div>
+
+        <div id="message"></div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="login">Sign In</button>
+            <button class="tab-btn" data-tab="register">Sign Up</button>
+        </div>
+
+        <!-- LOGIN SECTION -->
+        <div id="login-section" class="form-section active">
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="Enter your password" required>
+                </div>
+                <div class="buttons">
+                    <button type="submit" class="btn-primary">Sign In</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- REGISTER SECTION -->
+        <div id="register-section" class="form-section">
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="register-name" placeholder="Your full name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="register-email" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="register-password" placeholder="Create a strong password" required>
+                </div>
+                <div class="buttons">
+                    <button type="submit" class="btn-primary">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/index.js"></script>
+</body>
+</html>
